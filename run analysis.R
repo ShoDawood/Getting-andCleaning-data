@@ -1,34 +1,87 @@
-dataFolder <- "./UCI HAR Dataset/"
-trainFolder <- "./UCI HAR Dataset/train/"
-testFolder <- "./UCI HAR Dataset/test/"
-features <- t(read.table(paste(dataFolder,"features.txt",sep="")))
-activity_labels <- read.table(paste(dataFolder,"activity_labels.txt",sep=""))
-X_train_data = (read.table(paste(trainFolder,"X_train.txt",sep="")))
-train_label = (read.table(paste(trainFolder,"y_train.txt",sep="")))
-subject_train <- read.table(paste(trainFolder,"subject_train.txt",sep=""))
+setwd("C:\\R\\coursera\\github\\Getting-and-Cleaning-Data")
+getwd()
+## create a directory if not exist
+if(!file.exists("data")){
+  dir.create("data")
+}
+## download the data file
+fileurl <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+download.file(fileurl, destfile = "data/dataset.zip")
 
-X_test_data = (read.table(paste(testFolder,"X_test.txt",sep="")))
-test_label = (read.table(paste(testFolder,"y_test.txt",sep="")))
-subject_test <- read.table(paste(testFolder,"subject_test.txt",sep=""))
+##unzip dataset
+unzip(zipfile = "data/dataset.zip", exdir = "data")
 
-X_data = rbind(X_train_data, X_test_data)
-xlabel = rbind(train_label, test_label)
-subject <- rbind(subject_train, subject_test)
+## reading the data
 
-rm(X_test_data)
-rm(X_train_data)
-rm(train_label)
-rm(test_label)
-rm(subject_train)
-rm(subject_test)
+training_x <- read.table("data/UCI HAR Dataset/train/X_train.txt")
+training_y <- read.table("data/UCI HAR Dataset/train/y_train.txt")
+training_subject <- read.table("data/UCI HAR Dataset/train/subject_train.txt")
 
-colnames(X_data) <- features[2,]
-rlabel = factor(xlabel[,],labels=activity_labels[,2])
-FullData <- cbind(subject,rlabel,X_data)
-rm(X_data)
-rm(xlabel)
-rm(subject)
-colnames(FullData)[1] <- "subject"
-colnames(FullData)[2] <- "label"
+test_x <- read.table("data/UCI HAR Dataset/test/X_test.txt")
+test_y <- read.table("data/UCI HAR Dataset/test/y_test.txt")
+test_subject <- read.table("data/UCI HAR Dataset/test/subject_test.txt")
 
-write.table(FullData,"./data/HARTidyData.csv",sep=",",row.names=FALSE)
+
+
+# Read the feature list file
+features <- read.table("data/UCI HAR Dataset/features.txt")
+
+# Read the activity labels
+activityLabels <- read.table("data/UCI HAR Dataset/activity_labels.txt")
+
+
+#### 1. Merges the training and the test sets to create one data set.
+
+##merging the datasets by rows
+mergeddatafeatures <- rbind(training_x, test_x)
+mergeddataactivity <- rbind(training_y, test_y)
+mergeddatasubject <- rbind(training_subject, test_subject)
+
+
+## set the variable names
+names(mergeddatasubject)<-c("subject")
+names(mergeddataactivity)<- c("activity") 
+names(mergeddatafeatures)<- features$V2
+
+#merge the columns to get the single datafram
+dataCombine <- cbind(mergeddatasubject, mergeddataactivity)
+Data <- cbind(mergeddatafeatures, dataCombine)
+##View(Data)
+
+#### 2. Extracts only the measurements on the mean and standard deviation for each measurement.
+
+##Subset Name of Features by measurements on the mean and standard deviation
+subdataFeaturesNames<-features$V2[grep("mean\\(\\)|std\\(\\)", features$V2)]
+selectedNames<-c(as.character(subdataFeaturesNames), "subject", "activity" )
+Data<-subset(Data,select=selectedNames)
+ 
+
+#### 3. Uses descriptive activity names to name the activities in the data set
+#### 4. Appropriately labels the data set with descriptive variable names.
+
+names(Data)<-gsub("^t", "time", names(Data))
+names(Data)<-gsub("^f", "frequency", names(Data))
+names(Data)<-gsub("Acc", "Accelerometer", names(Data))
+names(Data)<-gsub("Gyro", "Gyroscope", names(Data))
+names(Data)<-gsub("Mag", "Magnitude", names(Data))
+names(Data)<-gsub("BodyBody", "Body", names(Data))
+
+##names(Data)
+ 
+ 
+
+####5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+library(plyr);
+Data2<-aggregate(. ~subject + activity, Data, mean)
+Data2<-Data2[order(Data2$subject,Data2$activity),]
+
+##generate tidydata.csv file 
+write.table(Data2, file = "tidydata.csv",row.name=FALSE)
+
+##generate tidydata.txt file 
+write.table(Data2, file = "tidydata.txt",row.name=FALSE) 
+ 
+ ## generating codebook md file
+install.packages("knitr")
+library(knitr)
+knit2html("codebook.Rmd");
