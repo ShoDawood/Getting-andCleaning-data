@@ -1,9 +1,52 @@
-The generated output is saved to the file tidy-data.csv. This file includes all rows merged from the test and training data included in the activity recognition dataset.
+# Overview
+* The raw data required for analysis should eb downloaded from following link
++ https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
++ The zip file to be extracted to the current file
+* It will create following directory structure
 
-The analysis addresses the training and test data separately, first combining the feature vector with outcome variables and subject identifiers (e.g. X_train.txt, Y_train.txt, subject_train.txt), and then merges the training and test data into a single, larger dataset.
+activities.txt
+features.txt
+ ./test
+       subject_test.txt
+       X_test.txt
+       Y_test.txt
+ ./train
+       subject_train.txt
+       X_train.txt
+       Y_train.txt
 
-The analysis then subsets the data so that only mean and standard devation measurements from the original data are included. This includes all measurements identified by -mean() or -std() labels.
 
-The analysis continues by taking the average value for each of these measurements by subject and activity. For example, a single subject will include a number of entries for each of the mean and std measurements across six different activities such as standing, walking, etc. The average value for "subject 1 standing" for each measurement is calculated, then for "subject 2 walking", etc, continuing with each subject-activity pair.
+## Read training data
+Read training set
+Read training labels
+Read training subjects who particpated in data capture
 
-The final output is the combined average values by subject-activity pair for every mean or std devation measurement in the original training and test data. Feature labels from the original dataset are retained, but it should be noted that the value in the output is now the average of all those values for subject-activity. For example, the feature label may be "tBodyAcc.mean...X", but the output is actually the mean of the "tBodyAcc.mean...X" values for each subject-activity pair
+## Read test data
+Read test set
+Read test labels
+Read test subjects who particpated in data capture
+
+##Combining data from x and y
+combine training and test data set using row bind function (rbind)
+combine training and test data labels using row bind function (rbind)
+combine training and test data subjects using row bind function (rbind)
+
+
+## Subsetting of data
+Read features only containing mean or standard deviation 
+
+## Assign column names to X values
+Provide meaningful names to the columns using features table
+
+## Assign column names to Y values
+Provide meaningful names to the columns using activities table
+
+## Combine X values, Y values and Subject data
+concate X values, Y Values and sunject data using common keys from these tables
+
+
+## Calculate means for subject and Activity
+Use aggregate function to calculate mean for subject and activities
+
+## Write tidy data to tidy file
+Create a file in the currenty directory with final tidy data. The file name is todydata.txt
