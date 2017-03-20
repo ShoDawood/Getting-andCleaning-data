@@ -1,87 +1,37 @@
-setwd("C:\\R\\coursera\\github\\Getting-and-Cleaning-Data")
-getwd()
-## create a directory if not exist
-if(!file.exists("data")){
-  dir.create("data")
-}
-## download the data file
-fileurl <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-download.file(fileurl, destfile = "data/dataset.zip")
+x_train <- read.csv("./train/X_train.txt",header=FALSE,sep="")
+y_train <- read.csv("./train/y_train.txt",header=FALSE)
+sub_train <- read.csv("./train/subject_train.txt",header=FALSE)
 
-##unzip dataset
-unzip(zipfile = "data/dataset.zip", exdir = "data")
-
-## reading the data
-
-training_x <- read.table("data/UCI HAR Dataset/train/X_train.txt")
-training_y <- read.table("data/UCI HAR Dataset/train/y_train.txt")
-training_subject <- read.table("data/UCI HAR Dataset/train/subject_train.txt")
-
-test_x <- read.table("data/UCI HAR Dataset/test/X_test.txt")
-test_y <- read.table("data/UCI HAR Dataset/test/y_test.txt")
-test_subject <- read.table("data/UCI HAR Dataset/test/subject_test.txt")
+## read Test data
+x_test <- read.csv("./test/X_test.txt",header=FALSE,sep="")
+y_test <- read.csv("./test/y_test.txt",header=FALSE)
+sub_test <- read.csv("./test/subject_test.txt",header=FALSE)
 
 
+##Combining data from x and y
+x_combind <-rbind(x_train,x_test)
+y_combind <-rbind(y_train,y_test)
+sub_combind <-rbind(sub_train,sub_test)
 
-# Read the feature list file
-features <- read.table("data/UCI HAR Dataset/features.txt")
+## Read features only containing mean or standard deviation 
+reqxvalues <- x_combind[, grep("-(mean|std)\\(\\)", read.table("features.txt")[, 2])]
 
-# Read the activity labels
-activityLabels <- read.table("data/UCI HAR Dataset/activity_labels.txt")
+## Assign column names to X values
+names(reqxvalues) <- read.table("features.txt")[grep("-(mean|std)\\(\\)", read.table("features.txt")[, 2]), 2] 
 
+## Assign column names to Y values
+y_combind[, 1] <- read.table("activity_labels.txt")[y_combind[, 1], 2]
+names(y_combind) <- "Activity"
 
-#### 1. Merges the training and the test sets to create one data set.
-
-##merging the datasets by rows
-mergeddatafeatures <- rbind(training_x, test_x)
-mergeddataactivity <- rbind(training_y, test_y)
-mergeddatasubject <- rbind(training_subject, test_subject)
+names(sub_combind) <- "Subject"
 
 
-## set the variable names
-names(mergeddatasubject)<-c("subject")
-names(mergeddataactivity)<- c("activity") 
-names(mergeddatafeatures)<- features$V2
+## Combine X values, Y values and Subject data
+combinedall <- cbind(reqxvalues, y_combind, sub_combind)
 
-#merge the columns to get the single datafram
-dataCombine <- cbind(mergeddatasubject, mergeddataactivity)
-Data <- cbind(mergeddatafeatures, dataCombine)
-##View(Data)
 
-#### 2. Extracts only the measurements on the mean and standard deviation for each measurement.
+## Calculate means for subject and Activity
+tidydata<-aggregate(. ~Subject + Activity, combinedall, mean)
 
-##Subset Name of Features by measurements on the mean and standard deviation
-subdataFeaturesNames<-features$V2[grep("mean\\(\\)|std\\(\\)", features$V2)]
-selectedNames<-c(as.character(subdataFeaturesNames), "subject", "activity" )
-Data<-subset(Data,select=selectedNames)
- 
-
-#### 3. Uses descriptive activity names to name the activities in the data set
-#### 4. Appropriately labels the data set with descriptive variable names.
-
-names(Data)<-gsub("^t", "time", names(Data))
-names(Data)<-gsub("^f", "frequency", names(Data))
-names(Data)<-gsub("Acc", "Accelerometer", names(Data))
-names(Data)<-gsub("Gyro", "Gyroscope", names(Data))
-names(Data)<-gsub("Mag", "Magnitude", names(Data))
-names(Data)<-gsub("BodyBody", "Body", names(Data))
-
-##names(Data)
- 
- 
-
-####5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
-library(plyr);
-Data2<-aggregate(. ~subject + activity, Data, mean)
-Data2<-Data2[order(Data2$subject,Data2$activity),]
-
-##generate tidydata.csv file 
-write.table(Data2, file = "tidydata.csv",row.name=FALSE)
-
-##generate tidydata.txt file 
-write.table(Data2, file = "tidydata.txt",row.name=FALSE) 
- 
- ## generating codebook md file
-install.packages("knitr")
-library(knitr)
-knit2html("codebook.Rmd");
+## Write tidy data to tidy file
+write.table(tidydata, file = "tidydata.txt",row.name=FALSE)
